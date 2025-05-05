@@ -2,6 +2,9 @@
 
 This web application enables users to train and use object detection models based on YOLO (You Only Look Once) frameworks. The app supports project setup, dataset uploads, model configuration, training, prediction, and multiple task types including Detection, Classification, and Segmentation.
 
+# View Results
+- To see the live results of this project, visit [Fitness Website Demo](https://rahulinchal.github.io/yolo-web-app/).
+  
 ## Features
 
 - **Project Management**: Create and organize projects with customizable names and descriptions
