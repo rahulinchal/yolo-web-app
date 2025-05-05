@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Model Training and Inference</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .project-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .project-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+        }
+        
+        .project-card h3 {
+            color: var(--primary-color);
+        }
+        
+        .badge {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+        
+        .badge-detection {
+            background-color: #3498db;
+        }
+        
+        .badge-classification {
+            background-color: #2ecc71;
+        }
+        
+        .badge-segmentation {
+            background-color: #e74c3c;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .file-upload-input {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 1rem;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-item button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .model-info {
+            background-color: #f5f5f5;
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .prediction-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .result-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .result-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .result-info {
+            padding: 0.75rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            .tab {
+                padding: 0.5rem;
+            }
+            .project-list {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            margin-top: 1rem;
+            height: 200px;
+            overflow-y: auto;
+        }
+        
+        .console-line {
+            margin-bottom: 0.5rem;
+        }
+        
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .metric-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .visualization {
+            width: 100%;
+            height: 300px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>YOLO Model Training and Inference Web Application</h1>
+            <p>Train and use YOLO models for object detection, classification, and segmentation</p>
+        </header>
+        
+        <div class="app-container">
+            <div id="home-view">
+                <div class="card">
+                    <h2>Projects</h2>
+                    <p>Create a new project or select an existing one to get started.</p>
+                    <button id="new-project-btn" class="btn-secondary">Create New Project</button>
+                    
+                    <div class="project-list" id="project-list">
+                        <!-- Project cards will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div id="create-project-view" class="hidden">
+                <div class="card">
+                    <h2>Create New Project</h2>
+                    <form id="create-project-form">
+                        <div class="form-group">
+                            <label for="project-name">Project Name <span style="color:red">*</span></label>
+                            <input type="text" id="project-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="project-description">Description (Optional)</label>
+                            <textarea id="project-description"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-type">Task Type <span style="color:red">*</span></label>
+                            <select id="task-type" required>
+                                <option value="detection">Detection</option>
+                                <option value="classification">Classification</option>
+                                <option value="segmentation">Segmentation</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-secondary">Create Project</button>
+                        <button type="button" id="cancel-create-project" class="btn-danger">Cancel</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="project-view" class="hidden">
+                <div class="card">
+                    <div id="project-header">
+                        <h2 id="project-title">Project Name</h2>
+                        <p id="project-desc">Project description</p>
+                        <span id="project-task-type" class="badge badge-detection">Detection</span>
+                    </div>
+                    
+                    <div class="tabs">
+                        <button class="tab active" data-tab="dataset">Dataset</button>
+                        <button class="tab" data-tab="training">Training</button>
+                        <button class="tab" data-tab="prediction">Prediction</button>
+                        <button class="tab" data-tab="results">Results</button>
+                    </div>
+                    
+                    <!-- Dataset Tab -->
+                    <div id="dataset-tab" class="tab-content active">
+                        <h3>Upload Dataset</h3>
+                        <p id="dataset-instructions">Upload your training images and annotations for detection.</p>
+                        
+                        <div class="form-group">
+                            <label>Images</label>
+                            <div class="file-upload" id="images-upload">
+                                <p>Drag and drop images or click to browse</p>
+                                <input type="file" id="images-upload-input" class="file-upload-input" multiple accept="image/*">
+                            </div>
+                            <div class="file-list" id="images-list"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Annotations</label>
+                            <div class="file-upload" id="annotations-upload">
+                                <p id="annotation-type-text">Drag and drop YOLO format annotation files or click to browse</p>
+                                <input type="file" id="annotations-upload-input" class="file-upload-input" multiple>
+                            </div>
+                            <div class="file-list" id="annotations-list"></div>
+                        </div>
+                        
+                        <button id="process-dataset-btn" class="btn-secondary">Process Dataset</button>
+                    </div>
+                    
+                    <!-- Training Tab -->
+                    <div id="training-tab" class="tab-content">
+                        <h3>Model Training</h3>
+                        
+                        <div class="form-group">
+                            <label for="yolo-version">YOLO Version</label>
+                            <select id="yolo-version">
+                                <option value="v5">YOLOv5</option>
+                                <option value="v6">YOLOv6</option>
+                                <option value="v7">YOLOv7</option>
+                                <option value="v8">YOLOv8</option>
+                                <option value="v11">YOLOv11</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="epochs">Epochs</label>
+                            <input type="number" id="epochs" value="100" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="batch-size">Batch Size</label>
+                            <input type="number" id="batch-size" value="16" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="learning-rate">Learning Rate</label>
+                            <input type="number" id="learning-rate" value="0.001" step="0.0001" min="0.0001">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="image-size">Image Size</label>
+                            <select id="image-size">
+                                <option value="416">416x416</option>
+                                <option value="512">512x512</option>
+                                <option value="640" selected>640x640</option>
+                                <option value="1024">1024x1024</option>
+                            </select>
+                        </div>
+                        
+                        <button id="train-model-btn" class="btn-secondary">Train Model</button>
+                        
+                        <div class="progress-container hidden" id="training-progress-container">
+                            <div class="progress-bar" id="training-progress-bar"></div>
+                        </div>
+                        
+                        <div class="console hidden" id="training-console">
+                            <!-- Training logs will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Prediction Tab -->
+                    <div id="prediction-tab" class="tab-content">
+                        <h3>Model Prediction</h3>
+                        
+                        <div class="form-group">
+                            <label for="model-select">Select Model</label>
+                            <select id="model-select">
+                                <option value="">-- Select a trained model --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="model-info hidden" id="model-info">
+                            <h4>Model Information</h4>
+                            <p id="model-info-text"></p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Upload Images for Prediction</label>
+                            <div class="file-upload" id="prediction-upload">
+                                <p>Drag and drop images or click to browse</p>
+                                <input type="file" id="prediction-upload-input" class="file-upload-input" multiple accept="image/*">
+                            </div>
+                            <div class="file-list" id="prediction-images-list"></div>
+                        </div>
+                        
+                        <button id="run-prediction-btn" class="btn-secondary">Run Prediction</button>
+                        
+                        <div class="prediction-results" id="prediction-results">
+                            <!-- Prediction results will be added here -->
+                        </div>
+                        
+                        <button id="download-results-btn" class="hidden">Download Results</button>
+                    </div>
+                    
+                    <!-- Results Tab -->
+                    <div id="results-tab" class="tab-content">
+                        <h3>Training Results</h3>
+                        
+                        <div class="form-group">
+                            <label for="result-model-select">Select Model</label>
+                            <select id="result-model-select">
+                                <option value="">-- Select a trained model --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="metrics-container" id="metrics-container">
+                            <!-- Metrics cards will be added here -->
+                        </div>
+                        
+                        <div class="visualization" id="loss-chart">
+                            <!-- Loss chart will be added here -->
+                        </div>
+                        
+                        <div class="visualization" id="metric-chart">
+                            <!-- Metric chart will be added here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <button id="back-to-home" class="btn-danger">Back to Projects</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        async function init() {
+    try {
+        const response = await fetch('http://localhost:8000/projects');
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        projectsData = await response.json();
+        renderProjects();
+    } catch (error) {
+        console.error('Error:', error);
+        // Fallback to mock data if backend isn't available
+        const storedProjects = localStorage.getItem('yolo-projects');
+        if (storedProjects) {
+            projectsData = JSON.parse(storedProjects);
+            renderProjects();
+        }
+    }
+    
+    setupEventListeners();
+}
+
+async function createProject(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('project-name').value,
+        description: document.getElementById('project-description').value,
+        task_type: document.getElementById('task-type').value
+    };
+
+    try {
+        const response = await fetch('http://localhost:8000/projects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) throw new Error('Failed to create project');
+        const newProject = await response.json();
+        
+        // Update local data
+        projectsData.push(newProject);
+        saveProjects();
+        openProject(newProject.id);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to create project');
+    }
+}
+
+async function handleFileUpload(files, fileArray, listElement, fileType) {
+    if (!files || files.length === 0) return;
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Create FormData for the file
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            // Send to backend
+            const response = await fetch('http://localhost:8000/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error('Upload failed');
+            const result = await response.json();
+            
+            // Add file to array with additional info from backend
+            fileArray.push({
+                file: file,
+                serverPath: result.path
+            });
+            
+            // Create file list item
+            const fileItem = document.createElement('div');
+            fileItem.classList.add('file-item');
+            fileItem.innerHTML = `
+                <span>${file.name} (${formatFileSize(file.size)})</span>
+                <button class="btn-danger remove-file" data-index="${fileArray.length - 1}" data-type="${fileType}">Remove</button>
+            `;
+            listElement.appendChild(fileItem);
+            
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert(`Failed to upload ${file.name}`);
+        }
+    }
+    
+    // Add event listeners to remove buttons
+    const removeButtons = listElement.querySelectorAll('.remove-file');
+    removeButtons.forEach(button => {
+        button.addEventListener('click', removeFile);
+    });
+}
+
+        // Mock backend data
+        let projectsData = [];
+        let currentProject = null;
+        let uploadedImages = [];
+        let uploadedAnnotations = [];
+        let predictImages = [];
+        let trainingProgress = 0;
+        let trainingInterval = null;
+        let models = [];
+        
+        // DOM elements
+        const homeView = document.getElementById('home-view');
+        const createProjectView = document.getElementById('create-project-view');
+        const projectView = document.getElementById('project-view');
+        const projectList = document.getElementById('project-list');
+        const newProjectBtn = document.getElementById('new-project-btn');
+        const createProjectForm = document.getElementById('create-project-form');
+        const cancelCreateProjectBtn = document.getElementById('cancel-create-project');
+        const backToHomeBtn = document.getElementById('back-to-home');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const projectTitle = document.getElementById('project-title');
+        const projectDesc = document.getElementById('project-desc');
+        const projectTaskType = document.getElementById('project-task-type');
+        const datasetInstructions = document.getElementById('dataset-instructions');
+        const annotationTypeText = document.getElementById('annotation-type-text');
+        const imagesUploadInput = document.getElementById('images-upload-input');
+        const annotationsUploadInput = document.getElementById('annotations-upload-input');
+        const imagesList = document.getElementById('images-list');
+        const annotationsList = document.getElementById('annotations-list');
+        const processDatasetBtn = document.getElementById('process-dataset-btn');
+        const trainModelBtn = document.getElementById('train-model-btn');
+        const trainingProgressContainer = document.getElementById('training-progress-container');
+        const trainingProgressBar = document.getElementById('training-progress-bar');
+        const trainingConsole = document.getElementById('training-console');
+        const modelSelect = document.getElementById('model-select');
+        const resultModelSelect = document.getElementById('result-model-select');
+        const modelInfo = document.getElementById('model-info');
+        const modelInfoText = document.getElementById('model-info-text');
+        const predictionUploadInput = document.getElementById('prediction-upload-input');
+        const predictionImagesList = document.getElementById('prediction-images-list');
+        const runPredictionBtn = document.getElementById('run-prediction-btn');
+        const predictionResults = document.getElementById('prediction-results');
+        const downloadResultsBtn = document.getElementById('download-results-btn');
+        const metricsContainer = document.getElementById('metrics-container');
+        const lossChartContainer = document.getElementById('loss-chart');
+        const metricChartContainer = document.getElementById('metric-chart');
+        
+        // Initialize the application
+        function init() {
+            // Load projects from localStorage (simulating backend storage)
+            const storedProjects = localStorage.getItem('yolo-projects');
+            if (storedProjects) {
+                projectsData = JSON.parse(storedProjects);
+                renderProjects();
+            }
+            
+            // Setup event listeners
+            setupEventListeners();
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            newProjectBtn.addEventListener('click', showCreateProjectView);
+            cancelCreateProjectBtn.addEventListener('click', showHomeView);
+            backToHomeBtn.addEventListener('click', showHomeView);
+            
+            // Create project form
+            createProjectForm.addEventListener('submit', createProject);
+            
+            // Tab navigation
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
+            });
+            
+            // File uploads
+            setupFileUpload('images-upload', imagesUploadInput, handleImageUpload);
+            setupFileUpload('annotations-upload', annotationsUploadInput, handleAnnotationUpload);
+            setupFileUpload('prediction-upload', predictionUploadInput, handlePredictionImageUpload);
+            
+            // Dataset processing
+            processDatasetBtn.addEventListener('click', processDataset);
+            
+            // Training
+            trainModelBtn.addEventListener('click', startTraining);
+            
+            // Prediction
+            modelSelect.addEventListener('change', showModelInfo);
+            resultModelSelect.addEventListener('change', showModelResults);
+            runPredictionBtn.addEventListener('click', runPrediction);
+            downloadResultsBtn.addEventListener('click', downloadResults);
+        }
+        
+        // Render project list
+        function renderProjects() {
+            projectList.innerHTML = '';
+            
+            if (projectsData.length === 0) {
+                projectList.innerHTML = '<p>No projects found. Create a new project to get started.</p>';
+                return;
+            }
+            
+            projectsData.forEach(project => {
+                const projectCard = document.createElement('div');
+                projectCard.classList.add('project-card');
+                projectCard.innerHTML = `
+                    <h3>${project.name}</h3>
+                    <p>${project.description || 'No description'}</p>
+                    <span class="badge badge-${project.taskType}">${project.taskType.charAt(0).toUpperCase() + project.taskType.slice(1)}</span>
+                    <p><small>Created: ${new Date(project.createdAt).toLocaleDateString()}</small></p>
+                `;
+                projectCard.addEventListener('click', () => openProject(project.id));
+                projectList.appendChild(projectCard);
+            });
+        }
+        
+        // Navigation functions
+        function showHomeView() {
+            homeView.classList.remove('hidden');
+            createProjectView.classList.add('hidden');
+            projectView.classList.add('hidden');
+            currentProject = null;
+            
+            // Clear uploads and training state
+            clearUploads();
+            stopTraining();
+        }
+        
+        function showCreateProjectView() {
+            homeView.classList.add('hidden');
+            createProjectView.classList.remove('hidden');
+            projectView.classList.add('hidden');
+            
+            // Reset form
+            createProjectForm.reset();
+        }
+        
+        function showProjectView() {
+            homeView.classList.add('hidden');
+            createProjectView.classList.add('hidden');
+            projectView.classList.remove('hidden');
+            
+            // Set active tab to dataset by default
+            switchTab('dataset');
+        }
+        
+        // Tab switching
+        function switchTab(tabId) {
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // Special logic for specific tabs
+            if (tabId === 'prediction') {
+                loadModels();
+            }
+            
+            if (tabId === 'results') {
+                loadModels(true);
+            }
+        }
+        
+        // Project operations
+        function createProject(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('project-name').value;
+            const description = document.getElementById('project-description').value;
+            const taskType = document.getElementById('task-type').value;
+            
+            const newProject = {
+                id: Date.now().toString(),
+                name,
+                description,
+                taskType,
+                createdAt: new Date().toISOString(),
+                models: [],
+                datasets: {
+                    processed: false,
+                    images: 0,
+                    annotations: 0
+                }
+            };
+            
+            projectsData.push(newProject);
+            saveProjects();
+            
+            // Open the new project
+            openProject(newProject.id);
+        }
+        
+        function openProject(projectId) {
+            const project = projectsData.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentProject = project;
+            
+            // Update project view
+            projectTitle.textContent = project.name;
+            projectDesc.textContent = project.description || 'No description';
+            projectTaskType.textContent = project.taskType.charAt(0).toUpperCase() + project.taskType.slice(1);
+            projectTaskType.className = `badge badge-${project.taskType}`;
+            
+            // Update dataset instructions based on task type
+            updateDatasetInstructions(project.taskType);
+            
+            // Show project view
+            showProjectView();
+            
+            // Load project models if any
+            models = currentProject.models || [];
+        }
+        
+        function updateDatasetInstructions(taskType) {
+            switch (taskType) {
+                case 'detection':
+                    datasetInstructions.textContent = 'Upload your training images and YOLO format annotation files for object detection.';
+                    annotationTypeText.textContent = 'Drag and drop YOLO format annotation files (.txt) or click to browse';
+                    break;
+                case 'classification':
+                    datasetInstructions.textContent = 'Upload your training images organized by class folders or with a classes.txt file.';
+                    annotationTypeText.textContent = 'Drag and drop class labels file or click to browse';
+                    break;
+                case 'segmentation':
+                    datasetInstructions.textContent = 'Upload your training images and segmentation mask files.';
+                    annotationTypeText.textContent = 'Drag and drop segmentation mask files or click to browse';
+                    break;
+            }
+        }
+        
+        // File upload setup
+        function setupFileUpload(containerId, inputElement, handleCallback) {
+            const container = document.getElementById(containerId);
+            
+            container.addEventListener('click', () => {
+                inputElement.click();
+            });
+            
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                container.style.borderColor = 'var(--primary-color)';
+            });
+            
+            container.addEventListener('dragleave', () => {
+                container.style.borderColor = '#ddd';
+            });
+            
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                container.style.borderColor = '#ddd';
+                handleCallback(e.dataTransfer.files);
+            });
+            
+            inputElement.addEventListener('change', () => {
+                handleCallback(inputElement.files);
+            });
+        }
+        
+        // Handle file uploads
+        function handleImageUpload(files) {
+            handleFileUpload(files, uploadedImages, imagesList, 'image');
+        }
+        
+        function handleAnnotationUpload(files) {
+            handleFileUpload(files, uploadedAnnotations, annotationsList, 'annotation');
+        }
+        
+        function handlePredictionImageUpload(files) {
+            handleFileUpload(files, predictImages, predictionImagesList, 'prediction-image');
+        }
+        
+        function handleFileUpload(files, fileArray, listElement, fileType) {
+            if (!files || files.length === 0) return;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Add file to array
+                fileArray.push(file);
+                
+                // Create file list item
+                const fileItem = document.createElement('div');
+                fileItem.classList.add('file-item');
+                fileItem.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <button class="btn-danger remove-file" data-index="${fileArray.length - 1}" data-type="${fileType}">Remove</button>
+                `;
+                listElement.appendChild(fileItem);
+            }
+            
+            // Add event listeners to remove buttons
+            const removeButtons = listElement.querySelectorAll('.remove-file');
+            removeButtons.forEach(button => {
+                button.addEventListener('click', removeFile);
+            });
+        }
+        
+        function removeFile(e) {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            const fileType = e.target.getAttribute('data-type');
+            
+            if (fileType === 'image') {
+                uploadedImages.splice(index, 1);
+                renderFileList(uploadedImages, imagesList, 'image');
+            } else if (fileType === 'annotation') {
+                uploadedAnnotations.splice(index, 1);
+                renderFileList(uploadedAnnotations, annotationsList, 'annotation');
+            } else if (fileType === 'prediction-image') {
+                predictImages.splice(index, 1);
+                renderFileList(predictImages, predictionImagesList, 'prediction-image');
+            }
+        }
+
+        function renderFileList(fileArray, listElement, fileType) {
+            listElement.innerHTML = '';
+            
+            fileArray.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.classList.add('file-item');
+                fileItem.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <button class="btn-danger remove-file" data-index="${index}" data-type="${fileType}">Remove</button>
+                `;
+                listElement.appendChild(fileItem);
+            });
+
+            // Add event listeners to remove buttons
+            const removeButtons = listElement.querySelectorAll('.remove-file');
+            removeButtons.forEach(button => {
+                button.addEventListener('click', removeFile);
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Dataset processing
+        function processDataset() {
+            if (uploadedImages.length === 0) {
+                alert('Please upload at least one image');
+                return;
+            }
+
+            if (currentProject.taskType !== 'classification' && uploadedAnnotations.length === 0) {
+                alert('Please upload annotation files');
+                return;
+            }
+
+            // Update project dataset info
+            currentProject.datasets = {
+                processed: true,
+                images: uploadedImages.length,
+                annotations: uploadedAnnotations.length,
+                processedAt: new Date().toISOString()
+            };
+
+            saveProjects();
+
+            // Show success message
+            alert('Dataset processed successfully! You can now proceed to training.');
+        }
+
+        // Model training
+        function startTraining() {
+            if (!currentProject.datasets.processed) {
+                alert('Please process your dataset first');
+                return;
+            }
+
+            // Get training parameters
+            const yoloVersion = document.getElementById('yolo-version').value;
+            const epochs = parseInt(document.getElementById('epochs').value);
+            const batchSize = parseInt(document.getElementById('batch-size').value);
+            const learningRate = parseFloat(document.getElementById('learning-rate').value);
+            const imageSize = parseInt(document.getElementById('image-size').value);
+
+            // Show training UI
+            trainingProgressContainer.classList.remove('hidden');
+            trainingConsole.classList.remove('hidden');
+            trainingConsole.innerHTML = '';
+            trainingProgress = 0;
+            updateTrainingProgress(0);
+
+            // Add initial console messages
+            addConsoleMessage('Starting training session...');
+            addConsoleMessage(`YOLO Version: ${yoloVersion}`);
+            addConsoleMessage(`Epochs: ${epochs}, Batch Size: ${batchSize}, Learning Rate: ${learningRate}, Image Size: ${imageSize}x${imageSize}`);
+            addConsoleMessage('Preparing dataset...');
+            addConsoleMessage('Initializing model...');
+
+            // Simulate training progress
+            trainingInterval = setInterval(() => {
+                trainingProgress += Math.random() * 5;
+                if (trainingProgress > 100) trainingProgress = 100;
+                updateTrainingProgress(trainingProgress);
+
+                // Add random training logs
+                if (Math.random() > 0.7) {
+                    const epoch = Math.floor(trainingProgress / (100 / epochs));
+                    const loss = (Math.random() * 0.5).toFixed(4);
+                    const metrics = ['mAP', 'precision', 'recall'];
+                    const metric = metrics[Math.floor(Math.random() * metrics.length)];
+                    const value = (Math.random() * 0.5 + 0.5).toFixed(4);
+                    
+                    if (metric === 'mAP') {
+                        addConsoleMessage(`Epoch ${epoch}/${epochs}: train/loss=${loss}, val/loss=${(loss * 1.1).toFixed(4)}, metrics/${metric}=${value}`);
+                    } else {
+                        addConsoleMessage(`Epoch ${epoch}/${epochs}: train/loss=${loss}, val/loss=${(loss * 1.1).toFixed(4)}`);
+                    }
+                }
+
+                // Complete training
+                if (trainingProgress >= 100) {
+                    completeTraining(yoloVersion, epochs, batchSize, learningRate, imageSize);
+                }
+            }, 1000);
+        }
+
+        function updateTrainingProgress(progress) {
+            trainingProgressBar.style.width = `${progress}%`;
+        }
+
+        function addConsoleMessage(message) {
+            const line = document.createElement('div');
+            line.classList.add('console-line');
+            line.textContent = message;
+            trainingConsole.appendChild(line);
+            trainingConsole.scrollTop = trainingConsole.scrollHeight;
+        }
+
+        function completeTraining(yoloVersion, epochs, batchSize, learningRate, imageSize) {
+            clearInterval(trainingInterval);
+            addConsoleMessage('Training completed successfully!');
+
+            // Create new model entry
+            const modelId = Date.now().toString();
+            const newModel = {
+                id: modelId,
+                name: `${currentProject.name} Model ${currentProject.models.length + 1}`,
+                yoloVersion,
+                epochs,
+                batchSize,
+                learningRate,
+                imageSize,
+                trainedAt: new Date().toISOString(),
+                metrics: {
+                    mAP: (Math.random() * 0.3 + 0.5).toFixed(4),
+                    precision: (Math.random() * 0.3 + 0.6).toFixed(4),
+                    recall: (Math.random() * 0.3 + 0.6).toFixed(4),
+                    loss: (Math.random() * 0.1).toFixed(4)
+                },
+                trainingHistory: generateTrainingHistory(epochs)
+            };
+
+            // Add model to project
+            currentProject.models.push(newModel);
+            saveProjects();
+
+            // Add to models array for UI
+            models.push(newModel);
+
+            // Switch to results tab
+            switchTab('results');
+            showModelResults(modelId);
+        }
+
+        function generateTrainingHistory(epochs) {
+            const history = [];
+            for (let i = 1; i <= epochs; i++) {
+                history.push({
+                    epoch: i,
+                    loss: (Math.random() * 5 / i).toFixed(4),
+                    val_loss: (Math.random() * 5 / i).toFixed(4),
+                    mAP: (Math.random() * 0.5 / i + 0.5).toFixed(4)
+                });
+            }
+            return history;
+        }
+
+        function stopTraining() {
+            if (trainingInterval) {
+                clearInterval(trainingInterval);
+                trainingInterval = null;
+            }
+        }
+
+        // Model operations
+        function loadModels(forResults = false) {
+            const selectElement = forResults ? resultModelSelect : modelSelect;
+            selectElement.innerHTML = '<option value="">-- Select a trained model --</option>';
+            
+            if (!currentProject || !currentProject.models || currentProject.models.length === 0) {
+                return;
+            }
+
+            currentProject.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = `${model.name} (YOLO${model.yoloVersion}, ${model.epochs} epochs)`;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function showModelInfo() {
+            const modelId = modelSelect.value;
+            if (!modelId) {
+                modelInfo.classList.add('hidden');
+                return;
+            }
+
+            const model = currentProject.models.find(m => m.id === modelId);
+            if (!model) return;
+
+            modelInfo.classList.remove('hidden');
+            modelInfoText.innerHTML = `
+                <p><strong>Model Name:</strong> ${model.name}</p>
+                <p><strong>YOLO Version:</strong> ${model.yoloVersion}</p>
+                <p><strong>Training Date:</strong> ${new Date(model.trainedAt).toLocaleString()}</p>
+                <p><strong>Parameters:</strong> Epochs: ${model.epochs}, Batch Size: ${model.batchSize}, Learning Rate: ${model.learningRate}, Image Size: ${model.imageSize}x${model.imageSize}</p>
+                <p><strong>Metrics:</strong> mAP: ${model.metrics.mAP}, Precision: ${model.metrics.precision}, Recall: ${model.metrics.recall}</p>
+            `;
+        }
+
+        function showModelResults() {
+            const modelId = resultModelSelect.value;
+            if (!modelId) {
+                metricsContainer.innerHTML = '<p>Select a model to view its training results</p>';
+                return;
+            }
+
+            const model = currentProject.models.find(m => m.id === modelId);
+            if (!model) return;
+
+            // Display metrics
+            metricsContainer.innerHTML = `
+                <div class="metric-card">
+                    <h4>mAP</h4>
+                    <div class="metric-value">${model.metrics.mAP}</div>
+                    <p>Mean Average Precision</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Precision</h4>
+                    <div class="metric-value">${model.metrics.precision}</div>
+                    <p>True Positives / (True Positives + False Positives)</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Recall</h4>
+                    <div class="metric-value">${model.metrics.recall}</div>
+                    <p>True Positives / (True Positives + False Negatives)</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Loss</h4>
+                    <div class="metric-value">${model.metrics.loss}</div>
+                    <p>Final Training Loss</p>
+                </div>
+            `;
+
+            // Create charts
+            createLossChart(model.trainingHistory);
+            createMetricChart(model.trainingHistory);
+        }
+
+        function createLossChart(history) {
+            const ctx = document.createElement('canvas');
+            lossChartContainer.innerHTML = '';
+            lossChartContainer.appendChild(ctx);
+
+            const labels = history.map(item => item.epoch);
+            const lossData = history.map(item => parseFloat(item.loss));
+            const valLossData = history.map(item => parseFloat(item.val_loss));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Training Loss',
+                            data: lossData,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Validation Loss',
+                            data: valLossData,
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Training and Validation Loss'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function createMetricChart(history) {
+            const ctx = document.createElement('canvas');
+            metricChartContainer.innerHTML = '';
+            metricChartContainer.appendChild(ctx);
+
+            const labels = history.map(item => item.epoch);
+            const mAPData = history.map(item => parseFloat(item.mAP));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'mAP',
+                            data: mAPData,
+                            borderColor: 'rgb(54, 162, 235)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Mean Average Precision (mAP)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        // Prediction operations
+        function runPrediction() {
+            const modelId = modelSelect.value;
+            if (!modelId) {
+                alert('Please select a model first');
+                return;
+            }
+
+            if (predictImages.length === 0) {
+                alert('Please upload at least one image for prediction');
+                return;
+            }
+
+            // Clear previous results
+            predictionResults.innerHTML = '';
+
+            // Simulate prediction
+            addConsoleMessage('Running predictions...');
+            
+            // Process each image
+            predictImages.forEach((file, index) => {
+                setTimeout(() => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const resultCard = document.createElement('div');
+                        resultCard.classList.add('result-card');
+                        
+                        // Generate random detections for demo
+                        const detections = generateRandomDetections();
+                        
+                        resultCard.innerHTML = `
+                            <img src="${e.target.result}" class="result-img" alt="Prediction result">
+                            <div class="result-info">
+                                <h4>${file.name}</h4>
+                                <p>${detections.length} objects detected</p>
+                                <ul>
+                                    ${detections.map(d => `<li>${d.class} (${d.confidence})</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                        predictionResults.appendChild(resultCard);
+                    };
+                    reader.readAsDataURL(file);
+                }, index * 500);
+            });
+
+            downloadResultsBtn.classList.remove('hidden');
+        }
+
+        function generateRandomDetections() {
+            const classes = ['person', 'car', 'dog', 'cat', 'bicycle', 'chair', 'bottle'];
+            const count = Math.floor(Math.random() * 5) + 1;
+            const detections = [];
+            
+            for (let i = 0; i < count; i++) {
+                detections.push({
+                    class: classes[Math.floor(Math.random() * classes.length)],
+                    confidence: (Math.random() * 0.5 + 0.5).toFixed(2)
+                });
+            }
+            
+            return detections;
+        }
+
+        function downloadResults() {
+            alert('Results downloaded successfully! (This is a demo)');
+        }
+
+        // Helper functions
+        function saveProjects() {
+            localStorage.setItem('yolo-projects', JSON.stringify(projectsData));
+        }
+
+        function clearUploads() {
+            uploadedImages = [];
+            uploadedAnnotations = [];
+            predictImages = [];
+            imagesList.innerHTML = '';
+            annotationsList.innerHTML = '';
+            predictionImagesList.innerHTML = '';
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
