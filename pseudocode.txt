@@ -1,0 +1,336 @@
+### YOLO Model Training and Inference Web Application Pseudocode
+
+Frontend (index.html)
+
+### Data Structures
+
+- projectsData: Array of project objects
+  - Each project contains: id, name, description, taskType, createdAt, models[], datasets{}
+- currentProject: Currently selected project object
+- uploadedImages: Array of image files for training
+- uploadedAnnotations: Array of annotation files for training
+- predictImages: Array of images for prediction
+- models: Array of model objects related to current project
+
+### Initialization
+
+FUNCTION init():
+    TRY:
+        Fetch projects from backend API
+        IF successful:
+            Store projects in projectsData
+            Render project list
+        ELSE:
+            Load projects from localStorage as fallback
+    CATCH:
+        Load projects from localStorage
+    END TRY
+    Setup event listeners
+END FUNCTION
+
+
+### UI Navigation
+
+FUNCTION showHomeView():
+    Show home view
+    Hide create project view
+    Hide project view
+    Set currentProject to null
+    Clear uploaded files
+    Stop any ongoing training
+END FUNCTION
+
+FUNCTION showCreateProjectView():
+    Hide home view
+    Show create project view
+    Hide project view
+    Reset create project form
+END FUNCTION
+
+FUNCTION showProjectView():
+    Hide home view
+    Hide create project view
+    Show project view
+    Set default active tab to 'dataset'
+END FUNCTION
+
+FUNCTION switchTab(tabId):
+    Remove active class from all tabs
+    Add active class to selected tab
+    Hide all tab content sections
+    Show content for selected tab
+    
+    IF tabId is 'prediction':
+        Load models for prediction
+    ELSE IF tabId is 'results':
+        Load models for results view
+    END IF
+END FUNCTION
+
+### Project Management
+
+FUNCTION createProject(event):
+    Prevent default form submission
+    
+    Collect form data (name, description, taskType)
+    
+    TRY:
+        Send POST request to create project on backend
+        IF successful:
+            Add new project to projectsData
+            Save projects to localStorage
+            Open the new project
+        ELSE:
+            Show error message
+    CATCH:
+        Show error message
+    END TRY
+END FUNCTION
+
+FUNCTION openProject(projectId):
+    Find project with matching ID in projectsData
+    IF project found:
+        Set currentProject to the found project
+        Update project view with project details
+        Update dataset instructions based on task type
+        Show project view
+        Load project models
+    END IF
+END FUNCTION
+
+FUNCTION updateDatasetInstructions(taskType):
+    SWITCH taskType:
+        CASE 'detection':
+            Set instructions for object detection
+        CASE 'classification':
+            Set instructions for classification
+        CASE 'segmentation':
+            Set instructions for segmentation
+    END SWITCH
+END FUNCTION
+
+### File Upload Handling
+
+FUNCTION setupFileUpload(containerId, inputElement, handleCallback):
+    Set click event to trigger file input
+    Set dragover event to highlight drop area
+    Set dragleave event to remove highlight
+    Set drop event to handle file drop and pass to callback
+    Set change event on input to pass files to callback
+END FUNCTION
+
+FUNCTION handleFileUpload(files, fileArray, listElement, fileType):
+    IF no files, return
+    
+    FOR each file in files:
+        Create FormData with file
+        
+        TRY:
+            Send file to backend upload endpoint
+            IF successful:
+                Add file to fileArray with server path
+                Create list item in UI
+            ELSE:
+                Show error message
+        CATCH:
+            Show error message
+        END TRY
+    END FOR
+    
+    Set up remove buttons for each file
+END FUNCTION
+
+FUNCTION removeFile(event):
+    Get file index and type from button data attributes
+    
+    IF type is 'image':
+        Remove file from uploadedImages
+        Re-render image file list
+    ELSE IF type is 'annotation':
+        Remove file from uploadedAnnotations
+        Re-render annotation file list
+    ELSE IF type is 'prediction-image':
+        Remove file from predictImages
+        Re-render prediction image file list
+    END IF
+END FUNCTION
+
+
+### Dataset Processing
+
+FUNCTION processDataset():
+    IF no images uploaded:
+        Show alert
+        Return
+    END IF
+    
+    IF task is not classification AND no annotations uploaded:
+        Show alert
+        Return
+    END IF
+    
+    Update current project dataset info
+    Save projects to localStorage
+    Show success message
+END FUNCTION
+
+
+### Model Training
+
+FUNCTION startTraining():
+    IF dataset not processed:
+        Show alert
+        Return
+    END IF
+    
+    Collect training parameters
+    Show training UI elements
+    Initialize training progress
+    Add initial console messages
+    
+    Start training interval to simulate progress:
+        Increment progress
+        Update progress bar
+        Add random training logs
+        
+        IF progress reaches 100%:
+            Complete training
+        END IF
+END FUNCTION
+
+FUNCTION completeTraining(yoloVersion, epochs, batchSize, learningRate, imageSize):
+    Clear training interval
+    Add completion message
+    
+    Create new model object with:
+        - ID, name, YOLO version, training parameters
+        - Random metrics for demo
+        - Generated training history
+    
+    Add model to current project
+    Save projects to localStorage
+    Add model to local models array
+    Switch to results tab
+    Show model results
+END FUNCTION
+
+
+### Model Operations
+
+FUNCTION loadModels(forResults = false):
+    Select appropriate dropdown element
+    Clear dropdown options
+    
+    IF no current project OR no models:
+        Return
+    END IF
+    
+    FOR each model in current project models:
+        Create and append option to dropdown
+    END FOR
+END FUNCTION
+
+FUNCTION showModelInfo():
+    Get selected model ID
+    IF no ID selected:
+        Hide model info
+        Return
+    END IF
+    
+    Find model object by ID
+    Show model info container
+    Update model info text with details
+END FUNCTION
+
+FUNCTION showModelResults():
+    Get selected model ID
+    IF no ID selected:
+        Show message to select a model
+        Return
+    END IF
+    
+    Find model object by ID
+    Display metrics in metrics container
+    Create charts for loss and metrics
+END FUNCTION
+
+
+### Prediction Operations
+
+FUNCTION runPrediction():
+    IF no model selected:
+        Show alert
+        Return
+    END IF
+    
+    IF no prediction images uploaded:
+        Show alert
+        Return
+    END IF
+    
+    Clear previous results
+    Add console message
+    
+    FOR each prediction image:
+        Read image file
+        Create result card with:
+            - Image preview
+            - Randomly generated detections for demo
+        Add result card to results container
+    END FOR
+    
+    Show download button
+END FUNCTION
+
+
+## Backend (main.py)
+
+### Setup
+
+Create FastAPI application
+Configure CORS middleware to allow frontend connections
+Initialize empty projects database (dictionary)
+
+
+### API Endpoints
+
+ENDPOINT GET "/":
+    Return message indicating backend is running
+
+ENDPOINT POST "/projects":
+    PARAMETERS:
+        name: string (required)
+        description: string (optional)
+        task_type: string (optional, default "detection")
+    
+    Generate unique project ID
+    Create project object with provided parameters
+    Store project in projects database
+    Return project object
+
+ENDPOINT GET "/projects":
+    Return list of all projects in database
+
+ENDPOINT POST "/upload":
+    PARAMETERS:
+        file: UploadFile (required)
+    
+    Create uploads directory if it doesn't exist
+    Save uploaded file to directory
+    Return filename and path
+
+ENDPOINT POST "/train":
+    Create YOLO model instance
+    Configure training parameters
+    Start training process
+    Return training results
+
+
+### Model Training Function
+
+FUNCTION train_model():
+    Load pretrained YOLO model
+    Configure training parameters
+    Run training on specified dataset
+    Return training results and metrics
+END FUNCTION
